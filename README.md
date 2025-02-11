@@ -10,6 +10,11 @@ This is a simple Flask-based REST API for user registration, login, and user inf
 - PostgreSQL database integration.
 - Password hashing for security.
 
+### Run docker-compose
+
+```bash
+docker-compose up
+```
 
 ### Examples of usage
 
