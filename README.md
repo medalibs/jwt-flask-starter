@@ -10,3 +10,24 @@ This is a simple Flask-based REST API for user registration, login, and user inf
 - PostgreSQL database integration.
 - Password hashing for security.
 
+
+### Examples of usage
+
+```bash
+
+curl -X POST -H "Content-Type: application/json" -d '{
+    "username": "testuser",
+    "email": "test@example.com",
+    "password": "testpassword"
+}' http://localhost:5000/register
+
+```
+
+```bash
+
+curl -X POST -H "Content-Type: application/json" -d '{
+    "username": "testuser",
+    "password": "testpassword"
+}' http://localhost:5000/login
+
+```
