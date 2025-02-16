@@ -27,8 +27,10 @@ class User(db.Model):
     password = db.Column(db.String(255), nullable=False)  # Increased length for hash
 
 # Route for user registration
-@app.route('/register', methods=['POST'])
+@app.route('/register', methods=['POST', 'OPTIONS'])
 def register():
+    if request.method == 'OPTIONS':
+        return '', 204
     data = request.get_json()
     
     # Check for required fields
@@ -61,8 +63,10 @@ def register():
     return jsonify({"msg": "User registered successfully!"}), 201
 
 # Route to obtain a JWT token
-@app.route('/login', methods=['POST'])
+@app.route('/login', methods=['POST', 'OPTIONS'])
 def login():
+    if request.method == 'OPTIONS':
+        return '', 204
     data = request.get_json()
     
     if not data or not all(key in data for key in ['username', 'password']):
@@ -79,9 +83,12 @@ def login():
     return jsonify({"msg": "Invalid credentials!"}), 401
 
 # Route to get user information
-@app.route('/user_info', methods=['GET'])
+@app.route('/user_info', methods=['GET', 'OPTIONS'])
 @jwt_required()
 def user_info():
+    if request.method == 'OPTIONS':
+        return '', 204
+    
     current_user_id = get_jwt_identity()
     user = User.query.get(int(current_user_id))
     
