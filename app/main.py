@@ -25,8 +25,8 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)  # Increased length for hash
-    first_name = db.Column(db.String(80), nullable=False)
-    last_name = db.Column(db.String(80), nullable=False)
+    first_name = db.Column(db.String(80), nullable=True)  # Optional field
+    last_name = db.Column(db.String(80), nullable=True)   # Optional field
     date_of_birth = db.Column(db.Date, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -40,15 +40,17 @@ def register():
     data = request.get_json()
     
     # Check for required fields
-    required_fields = ['email', 'password', 'first_name', 'last_name', 'date_of_birth']
+    required_fields = ['email', 'password', 'date_of_birth']
     if not data or not all(key in data for key in required_fields):
         return jsonify({"msg": "Missing required fields"}), 400
 
     email = data['email']
     password = data['password']
-    first_name = data['first_name']
-    last_name = data['last_name']
     date_of_birth = datetime.strptime(data['date_of_birth'], '%Y-%m-%d')  # Assuming date format is YYYY-MM-DD
+
+    # Optional fields
+    first_name = data.get('first_name')  # Use .get() to avoid KeyError if field is missing
+    last_name = data.get('last_name')    # Use .get() to avoid KeyError if field is missing
 
     # Check if email already exists
     if User.query.filter_by(email=email).first():
