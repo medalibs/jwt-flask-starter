@@ -27,7 +27,7 @@ class User(db.Model):
     password = db.Column(db.String(255), nullable=False)  # Increased length for hash
     first_name = db.Column(db.String(80), nullable=True)  # Optional field
     last_name = db.Column(db.String(80), nullable=True)   # Optional field
-    date_of_birth = db.Column(db.Date, nullable=False)
+    date_of_birth = db.Column(db.Date, nullable=True)     # Optional field
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     is_active = db.Column(db.Boolean, default=True)
@@ -40,17 +40,24 @@ def register():
     data = request.get_json()
     
     # Check for required fields
-    required_fields = ['email', 'password', 'date_of_birth']
+    required_fields = ['email', 'password']
     if not data or not all(key in data for key in required_fields):
         return jsonify({"msg": "Missing required fields"}), 400
 
     email = data['email']
     password = data['password']
-    date_of_birth = datetime.strptime(data['date_of_birth'], '%Y-%m-%d')  # Assuming date format is YYYY-MM-DD
 
     # Optional fields
     first_name = data.get('first_name')  # Use .get() to avoid KeyError if field is missing
     last_name = data.get('last_name')    # Use .get() to avoid KeyError if field is missing
+    date_of_birth = data.get('date_of_birth')
+
+    # Convert date_of_birth to datetime object if provided
+    if date_of_birth:
+        try:
+            date_of_birth = datetime.strptime(date_of_birth, '%Y-%m-%d')
+        except ValueError:
+            return jsonify({"msg": "Invalid date format for date_of_birth. Use YYYY-MM-DD."}), 400
 
     # Check if email already exists
     if User.query.filter_by(email=email).first():
@@ -111,7 +118,7 @@ def user_info():
             "email": user.email,
             "first_name": user.first_name,
             "last_name": user.last_name,
-            "date_of_birth": user.date_of_birth.strftime('%Y-%m-%d'),
+            "date_of_birth": user.date_of_birth.strftime('%Y-%m-%d') if user.date_of_birth else None,
             "created_at": user.created_at.isoformat(),
             "updated_at": user.updated_at.isoformat(),
             "is_active": user.is_active
@@ -143,7 +150,10 @@ def update_user():
     if 'last_name' in data:
         user.last_name = data['last_name']
     if 'date_of_birth' in data:
-        user.date_of_birth = datetime.strptime(data['date_of_birth'], '%Y-%m-%d')
+        try:
+            user.date_of_birth = datetime.strptime(data['date_of_birth'], '%Y-%m-%d')
+        except ValueError:
+            return jsonify({"msg": "Invalid date format for date_of_birth. Use YYYY-MM-DD."}), 400
     if 'is_active' in data:
         user.is_active = data['is_active']
 
