@@ -10,6 +10,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql://{os.environ['DB_USER']}:{os.environ['DB_PASSWORD']}@{os.environ['DB_HOST']}:{os.environ['DB_PORT']}/{os.environ['DB_NAME']}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_ECHO'] = True
 app.config['JWT_SECRET_KEY'] = os.environ['JWT_SECRET_KEY']
 app.config['FLASK_ENV'] = 'development'
 app.config['DEBUG'] = True
@@ -79,6 +80,7 @@ def register():
         db.session.commit()
     except Exception as e:
         db.session.rollback()
+        print(f"Error: {str(e)}")
         return jsonify({"msg": "An error occurred while registering the user."}), 500
 
     return jsonify({"msg": "User registered successfully!"}), 201
