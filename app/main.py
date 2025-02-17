@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
@@ -19,12 +20,17 @@ CORS(app)
 db = SQLAlchemy(app)
 jwt = JWTManager(app)
 
-# User model with unique email
+# User model with email as the primary identifier
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)  # Increased length for hash
+    first_name = db.Column(db.String(80), nullable=False)
+    last_name = db.Column(db.String(80), nullable=False)
+    date_of_birth = db.Column(db.Date, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    is_active = db.Column(db.Boolean, default=True)
 
 # Route for user registration
 @app.route('/register', methods=['POST', 'OPTIONS'])
@@ -34,25 +40,31 @@ def register():
     data = request.get_json()
     
     # Check for required fields
-    if not data or not all(key in data for key in ['username', 'email', 'password']):
+    required_fields = ['email', 'password', 'first_name', 'last_name', 'date_of_birth']
+    if not data or not all(key in data for key in required_fields):
         return jsonify({"msg": "Missing required fields"}), 400
 
-    username = data['username']
     email = data['email']
     password = data['password']
+    first_name = data['first_name']
+    last_name = data['last_name']
+    date_of_birth = datetime.strptime(data['date_of_birth'], '%Y-%m-%d')  # Assuming date format is YYYY-MM-DD
 
-    # Check if email or username already exists
+    # Check if email already exists
     if User.query.filter_by(email=email).first():
         return jsonify({"msg": "Email already exists!"}), 400
-
-    if User.query.filter_by(username=username).first():
-        return jsonify({"msg": "Username already exists!"}), 400
 
     # Hash the password
     hashed_password = generate_password_hash(password)
     
     # Create the user
-    user = User(username=username, email=email, password=hashed_password)
+    user = User(
+        email=email,
+        password=hashed_password,
+        first_name=first_name,
+        last_name=last_name,
+        date_of_birth=date_of_birth
+    )
     try:
         db.session.add(user)
         db.session.commit()
@@ -69,13 +81,13 @@ def login():
         return '', 204
     data = request.get_json()
     
-    if not data or not all(key in data for key in ['username', 'password']):
-        return jsonify({"msg": "Missing username or password"}), 400
+    if not data or not all(key in data for key in ['email', 'password']):
+        return jsonify({"msg": "Missing email or password"}), 400
 
-    username = data['username']
+    email = data['email']
     password = data['password']
 
-    user = User.query.filter_by(username=username).first()
+    user = User.query.filter_by(email=email).first()
     if user and check_password_hash(user.password, password):
         # Convert ID to string for JWT identity
         access_token = create_access_token(identity=str(user.id))
@@ -93,8 +105,52 @@ def user_info():
     user = User.query.get(int(current_user_id))
     
     if user:
-        return jsonify({"username": user.username, "email": user.email})
+        return jsonify({
+            "email": user.email,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "date_of_birth": user.date_of_birth.strftime('%Y-%m-%d'),
+            "created_at": user.created_at.isoformat(),
+            "updated_at": user.updated_at.isoformat(),
+            "is_active": user.is_active
+        })
     return jsonify({"msg": "User not found!"}), 404
+
+# Route to update user information
+@app.route('/update_user', methods=['PUT', 'OPTIONS'])
+@jwt_required()
+def update_user():
+    if request.method == 'OPTIONS':
+        return '', 204
+    
+    current_user_id = get_jwt_identity()
+    user = User.query.get(int(current_user_id))
+    
+    if not user:
+        return jsonify({"msg": "User not found!"}), 404
+
+    data = request.get_json()
+    
+    # Check if data is provided
+    if not data:
+        return jsonify({"msg": "No data provided to update"}), 400
+
+    # Update fields if they are provided in the request
+    if 'first_name' in data:
+        user.first_name = data['first_name']
+    if 'last_name' in data:
+        user.last_name = data['last_name']
+    if 'date_of_birth' in data:
+        user.date_of_birth = datetime.strptime(data['date_of_birth'], '%Y-%m-%d')
+    if 'is_active' in data:
+        user.is_active = data['is_active']
+
+    try:
+        db.session.commit()
+        return jsonify({"msg": "User updated successfully!"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"msg": "An error occurred while updating the user."}), 500
 
 # Create the database and tables within the correct context
 with app.app_context():
