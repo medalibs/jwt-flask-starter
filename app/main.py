@@ -15,7 +15,7 @@ app.config['JWT_SECRET_KEY'] = os.environ['JWT_SECRET_KEY']
 app.config['FLASK_ENV'] = 'development'
 app.config['DEBUG'] = True
 
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
 # Initialize extensions
 db = SQLAlchemy(app)
@@ -36,8 +36,7 @@ class User(db.Model):
 # Route for user registration
 @app.route('/register', methods=['POST', 'OPTIONS'])
 def register():
-    if request.method == 'OPTIONS':
-        return '', 204
+    
     data = request.get_json()
     
     # Check for required fields
@@ -88,8 +87,7 @@ def register():
 # Route to obtain a JWT token
 @app.route('/login', methods=['POST', 'OPTIONS'])
 def login():
-    if request.method == 'OPTIONS':
-        return '', 204
+    
     data = request.get_json()
     
     if not data or not all(key in data for key in ['email', 'password']):
@@ -109,8 +107,7 @@ def login():
 @app.route('/user_info', methods=['GET', 'OPTIONS'])
 @jwt_required()
 def user_info():
-    if request.method == 'OPTIONS':
-        return '', 204
+    
     
     current_user_id = get_jwt_identity()
     user = User.query.get(int(current_user_id))
@@ -131,8 +128,7 @@ def user_info():
 @app.route('/update_user', methods=['PUT', 'OPTIONS'])
 @jwt_required()
 def update_user():
-    if request.method == 'OPTIONS':
-        return '', 204
+    
     
     current_user_id = get_jwt_identity()
     user = User.query.get(int(current_user_id))
