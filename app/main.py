@@ -34,7 +34,7 @@ class User(db.Model):
     is_active = db.Column(db.Boolean, default=True)
 
 # Route for user registration
-@app.route('/register', methods=['POST', 'OPTIONS'])
+@app.route('/register', methods=['POST'])
 def register():
     
     data = request.get_json()
@@ -85,7 +85,7 @@ def register():
     return jsonify({"msg": "User registered successfully!"}), 201
 
 # Route to obtain a JWT token
-@app.route('/login', methods=['POST', 'OPTIONS'])
+@app.route('/login', methods=['POST'])
 def login():
     
     data = request.get_json()
@@ -104,7 +104,7 @@ def login():
     return jsonify({"msg": "Invalid credentials!"}), 401
 
 # Route to get user information
-@app.route('/user_info', methods=['GET', 'OPTIONS'])
+@app.route('/user_info', methods=['GET'])
 @jwt_required()
 def user_info():
     
@@ -125,7 +125,7 @@ def user_info():
     return jsonify({"msg": "User not found!"}), 404
 
 # Route to update user information
-@app.route('/update_user', methods=['PUT', 'OPTIONS'])
+@app.route('/update_user', methods=['PUT'])
 @jwt_required()
 def update_user():
     
